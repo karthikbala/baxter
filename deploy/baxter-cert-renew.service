@@ -1,0 +1,8 @@
+[Unit]
+Description=Renew Baxter Response HTTPS certificate
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/certbot renew --quiet --config-dir /etc/baxter-response/letsencrypt --work-dir /var/lib/baxter-response/certbot --logs-dir /var/log/baxter-response/certbot --deploy-hook "nginx -t && systemctl reload nginx"

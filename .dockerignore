@@ -1,0 +1,14 @@
+node_modules
+.local
+.cache
+.env*
+.git
+android
+output
+outputs
+.playwright*
+coverage
+dist
+deploy/secrets
+**/._*
+**/.DS_Store

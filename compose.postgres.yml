@@ -1,0 +1,25 @@
+# Optional Ubuntu-local PostgreSQL instead of hosted Supabase.
+services:
+  postgres:
+    image: postgres:16.14-bookworm
+    environment:
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD}
+      POSTGRES_DB: baxter
+      POSTGRES_USER: baxter_admin
+    volumes: [postgres_data:/var/lib/postgresql/data]
+    restart: unless-stopped
+    healthcheck:
+      test: [CMD-SHELL, "pg_isready -U baxter_admin -d baxter"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+  api:
+    depends_on:
+      postgres:
+        condition: service_healthy
+  worker:
+    depends_on:
+      postgres:
+        condition: service_healthy
+volumes:
+  postgres_data:

@@ -1,0 +1,82 @@
+name: baxter-response
+x-runtime: &runtime
+  build:
+    context: .
+    target: runtime
+  init: true
+  restart: unless-stopped
+  security_opt: [no-new-privileges:true]
+  cap_drop: [ALL]
+services:
+  api:
+    <<: *runtime
+    environment:
+      NODE_ENV: production
+      HOST: 0.0.0.0
+      PORT: 3001
+      DEMO_ACCESS: "false"
+      APP_URL: ${APP_URL:?Set APP_URL}
+      AUTH_SECRET: ${AUTH_SECRET:?Set AUTH_SECRET}
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL}
+      AUTH_DATABASE_URL: ${AUTH_DATABASE_URL:?Set AUTH_DATABASE_URL}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_AGENT_MODEL: ${OPENAI_AGENT_MODEL:-gpt-5.4}
+      OPENAI_TRANSCRIPTION_MODEL: ${OPENAI_TRANSCRIPTION_MODEL:-gpt-transcribe}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      FCM_CREDENTIALS_PATH: ${FCM_CREDENTIALS_PATH:-}
+      FILE_ROOT: /data/files
+    volumes: [exports:/data/files]
+    healthcheck:
+      test:
+        [
+          CMD,
+          node,
+          -e,
+          "fetch('http://127.0.0.1:3001/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+  worker:
+    <<: *runtime
+    command: [node, dist/server/apps/worker/index.js]
+    environment:
+      NODE_ENV: production
+      AUTH_SECRET: ${AUTH_SECRET:?Set AUTH_SECRET}
+      DATABASE_URL: ${DATABASE_URL:?Set DATABASE_URL}
+      QUEUE_DATABASE_URL: ${QUEUE_DATABASE_URL:?Set QUEUE_DATABASE_URL}
+      VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+      VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+      VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:demo@example.com}
+      FCM_CREDENTIALS_PATH: ${FCM_CREDENTIALS_PATH:-}
+      WORKER_TENANT_IDS: ${WORKER_TENANT_IDS:-10000000-0000-4000-8000-000000000001}
+    volumes: ["./deploy/secrets:/run/secrets:ro"]
+  migrate:
+    <<: *runtime
+    env_file: .env.production
+    command: [node, dist/server/scripts/migrate.js]
+    profiles: [tools]
+    restart: "no"
+  seed:
+    <<: *runtime
+    env_file: .env.production
+    command: [node, dist/server/scripts/seed.js]
+    profiles: [tools]
+    restart: "no"
+  gateway:
+    build:
+      context: .
+      target: gateway
+    environment:
+      APP_HOST: ${APP_HOST:?Set APP_HOST}
+    ports: ["80:80", "443:443", "443:443/udp"]
+    volumes: [caddy_data:/data, caddy_config:/config]
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
+volumes:
+  exports:
+  caddy_data:
+  caddy_config:

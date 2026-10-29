@@ -1,0 +1,9 @@
+server {
+    listen 80;
+    listen [::]:80;
+    server_name __HOST__;
+    location /.well-known/acme-challenge/ {
+        root /var/www/baxter-acme;
+    }
+    location / { return 503; }
+}

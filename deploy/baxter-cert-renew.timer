@@ -1,0 +1,10 @@
+[Unit]
+Description=Check Baxter Response certificate renewal twice daily
+
+[Timer]
+OnCalendar=*-*-* 02,14:00:00
+RandomizedDelaySec=3600
+Persistent=true
+
+[Install]
+WantedBy=timers.target

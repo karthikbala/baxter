@@ -1,0 +1,8 @@
+# This host already runs nginx on 80/443. Keep this application's gateway private.
+services:
+  worker:
+    volumes: !override ["/etc/baxter-response/firebase:/run/secrets:ro"]
+  gateway:
+    environment:
+      APP_HOST: ":80"
+    ports: !override ["127.0.0.1:5188:80"]
